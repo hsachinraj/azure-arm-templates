@@ -1,0 +1,244 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "adminPassword": {
+            "type": "secureString",
+            "defaultValue": null
+        },
+          "tomcatadminuser": {
+              "type": "string",
+            "defaultValue": "vmadmin"
+    },
+       "tomcatadminpwd": {
+           "type": "secureString",
+            "defaultValue": "P2ssw0rd"
+    },
+    "mysqlpassword": {
+        "type": "string",
+            "defaultValue": "password"
+    },        
+    "location":{
+        "type": "string",
+        "defaultValue": "West US"
+    },
+        "vmInstanceName": {
+            "type": "string",
+            "defaultValue": "vstsjlresourcevm1"
+        },
+        "nicName": {
+            "type": "string",
+            "defaultValue": "nic"
+        },
+        "nsgName": {
+            "type": "string",
+            "defaultValue": "nsg"
+        },
+        "publicIPName": {
+            "type": "string",
+            "defaultValue": "pIP"
+        },
+        "vNetName": {
+            "type": "string",
+            "defaultValue": "vnet"
+        },
+        "storageName": {
+            "type": "string",
+            "defaultValue": "storage"
+        }
+    },
+    "variables": {
+        "vNicName": "[concat(parameters('vmInstanceName'),'_nicName')]",
+        "vNsgName": "[concat(parameters('vmInstanceName'),'_nsg')]",
+        "vpublicIPName": "[concat(parameters('vmInstanceName'),'_pIP')]",   
+        "vvNetName": "[concat(parameters('vmInstanceName'),'_vNet')]",   
+        "vStorageName": "[concat(parameters('vmInstanceName'),'storage')]"                 
+    },
+    "resources": [
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Compute/virtualMachines/vstsjlresourcevm1",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[parameters('vmInstanceName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_D1"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "14.04.3-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "[parameters('vmInstanceName')]",
+                        "createOption": "FromImage",
+                        "vhd": {
+                            "uri": "[concat('https', '://', variables('vstorageName'), '.blob.core.windows.net', concat('/vhds/', parameters('vmInstanceName'),'20161251757.vhd'))]"
+                        },
+                        "caching": "ReadWrite"
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('vmInstanceName')]",
+                    "adminUsername": "vmadmin",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false
+                    },
+                    "secrets": [],
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vNicName'))]"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('vStorageName'))]",
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('vNicName'))]"
+            ]
+        },
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Network/networkInterfaces/vstsjlresourcevm1271",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('vNicName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAddress": "10.1.0.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('vPublicIPName'))]"
+                            },
+                            "subnet": {
+                                "id": "[concat(resourceId('Microsoft.Network/virtualNetworks', variables('vvNetName')), '/subnets/default')]"
+                            }
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('vNsgName'))]"
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', variables('vPublicIPName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vvNetName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('vNsgName'))]"
+            ]
+        },
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Network/networkSecurityGroups/vstsjlresourcevm1",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('vNsgName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-ssh",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    },
+                     {
+                        "name": "default-allow-web",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "8080",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1001,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Network/publicIPAddresses/vstsjlresourcevm1",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('vPublicIPName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4
+            }
+        },
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Network/virtualNetworks/vstsjlresourcegroup",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('vvNetName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.1.0.0/16"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "addressPrefix": "10.1.0.0/24"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "comments": "Generalized from resource: /subscriptions/f2756440-b605-4c6f-b69d-d8e7423dfe75/resourceGroups/vstsjlresourcegroup/providers/Microsoft.Storage/storageAccounts/vstsjlresourcegroup5797",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('vStorageName')]",
+            "apiVersion": "2015-06-15",
+            "location": "westus",
+            "properties": {
+                "accountType": "Standard_LRS"
+            }
+        },
+        {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('vmInstanceName'),'/newuserscript')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmInstanceName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.2",
+        "settings": {
+          "fileUris": [
+            "https://raw.githubusercontent.com/hsachinraj/azure-templates/master/openjdk-tomcat-mysql-ubuntu-vm/java-tomcat-mysql-install.sh"
+                      ],
+          "commandToExecute": "[concat('sh java-tomcat-mysql-install.sh',' ',parameters('tomcatadminuser'),' ',parameters('tomcatadminpwd'),' ',parameters('mysqlPassword'))]"
+        }
+      }
+    }
+        
+    ]
+}
