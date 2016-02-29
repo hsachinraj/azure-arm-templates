@@ -17,6 +17,9 @@
     "vmInstanceName": {
       "value": "vstsjlarmrm1"
     },
+    "adminUserName": {
+      "value": "vmadmin"
+    },
     "adminPassword": {
       "value": "P2ssw0rd"
     }
