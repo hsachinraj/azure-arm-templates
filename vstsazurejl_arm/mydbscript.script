@@ -1,5 +1,4 @@
-CREATE USER 'user'@'localhost' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES on *.* to 'user'@'localhost' WITH GRANT OPTION;
+CREATE DATABASE alm;
 use alm;
 
 CREATE TABLE `employees` (
