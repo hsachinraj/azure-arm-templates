@@ -1,4 +1,4 @@
-CREATE DATABASE alm;
+CREATE DATABASE IF NOT EXISTS alm;
 use alm;
 
 CREATE TABLE `employees` (
